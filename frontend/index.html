@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Data Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=dribbble_neo">
+</head>
+
+<body>
+    <div class="app-container">
+
+        <div class="pane input-pane">
+            <header>
+                <h1>Test Data Generator</h1>
+
+            </header>
+
+            <form id="generate-form">
+                <div class="form-group">
+                    <label for="ddl-input">SQL DDL Schema</label>
+                    <textarea id="ddl-input" placeholder="CREATE TABLE users ( ... );"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group row-count">
+                        <label for="rows-input">Rows per table</label>
+                        <input type="number" id="rows-input" value="10" min="1" max="1000">
+                    </div>
+                    <button type="submit" id="generate-btn">
+                        <span class="btn-text">Generate Data</span>
+                        <span class="spinner hidden"></span>
+                    </button>
+                </div>
+            </form>
+            <div id="error-message" class="error hidden"></div>
+        </div>
+
+        <!-- Right Pane: Results -->
+        <div class="pane results-pane">
+            <div class="results-header">
+                <h2>Generated Output</h2>
+                <div class="tabs" id="tabs">
+                    <!-- Tabs injected via JS -->
+                </div>
+            </div>
+
+            <div class="results-content" id="results-content">
+                <div class="empty-state">
+                    <p>Paste your schema and click generate.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
