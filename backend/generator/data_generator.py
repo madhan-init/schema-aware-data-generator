@@ -23,9 +23,8 @@ def safe_eval_faker(faker_instance: Faker, expr: str):
     """
     try:
         tree = ast.parse(expr, mode='eval').body
-    except SyntaxError:
-        # Fallback if the LLM generated something weird
-        return faker_instance.word()
+    except SyntaxError as e:
+        raise ValueError(f"Invalid faker expression from LLM: '{expr}'. Syntax error: {e}")
 
     def _eval(node):
         if isinstance(node, ast.Name):
@@ -48,8 +47,7 @@ def safe_eval_faker(faker_instance: Faker, expr: str):
     try:
         return _eval(tree)
     except Exception as e:
-        print(f"Failed to safely evaluate '{expr}': {e}. Falling back to faker.word().")
-        return faker_instance.word()
+        raise ValueError(f"Failed to evaluate faker expression '{expr}': {e}")
 
 def generate_data(schema: dict, column_map: dict, topo_order: list, num_rows: int = 20) -> dict:
     """

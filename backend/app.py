@@ -5,6 +5,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import sqlglot
+import anthropic
 
 from backend.parser.ddl_parser import parse_ddl
 from backend.mapper.llm_mapper import get_or_build_column_map
@@ -61,8 +63,20 @@ def api_generate(req: GenerateRequest):
             
         results["seed_all"] = "\n".join(combined_sql)
         return results
+    except sqlglot.errors.ParseError as e:
+        raise HTTPException(status_code=400, detail=f"Bad DDL: {str(e)}")
+    except anthropic.AuthenticationError as e:
+        raise HTTPException(status_code=500, detail=f"Anthropic Authentication Error: {str(e)}")
+    except anthropic.APIConnectionError as e:
+        raise HTTPException(status_code=502, detail=f"Anthropic API Connection Error: {str(e)}")
+    except anthropic.APIStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Anthropic API Status Error: {str(e)}")
+    except anthropic.AnthropicError as e:
+        raise HTTPException(status_code=500, detail=f"Anthropic Error: {str(e)}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Bad Request: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 # Create frontend dir if it doesn't exist
 os.makedirs("frontend", exist_ok=True)
