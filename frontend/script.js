@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnText = document.querySelector('.btn-text');
     const spinner = document.querySelector('.spinner');
     const errorMsg = document.getElementById('error-message');
+    
+    const tokenUsageContainer = document.getElementById('token-usage');
+    const inputTokensSpan = document.getElementById('input-tokens');
+    const outputTokensSpan = document.getElementById('output-tokens');
+    const totalTokensSpan = document.getElementById('total-tokens');
 
     const tabsContainer = document.getElementById('tabs');
     const resultsContent = document.getElementById('results-content');
@@ -17,22 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenCountValue.textContent = globalTokenCount;
     }
 
-    // Load sample DDL into textarea initially
-    ddlInput.value = `CREATE TABLE users (
-    id          INT PRIMARY KEY,
-    u_nm        VARCHAR(100) NOT NULL,
-    email_addr  VARCHAR(255) UNIQUE NOT NULL,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE TABLE posts (
-    id          INT PRIMARY KEY,
-    user_id     INT NOT NULL,
-    title       VARCHAR(255) NOT NULL,
-    body        TEXT,
-    published   BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);`;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -47,6 +37,7 @@ CREATE TABLE posts (
         btnText.classList.add('hidden');
         spinner.classList.remove('hidden');
         errorMsg.classList.add('hidden');
+        if (tokenUsageContainer) tokenUsageContainer.classList.add('hidden');
         resultsContent.innerHTML = '<div class="empty-state"><p>Generating data (calling LLM)...</p></div>';
 
         try {
@@ -72,7 +63,6 @@ CREATE TABLE posts (
                 localStorage.setItem('tokenCount', globalTokenCount);
                 if (tokenCountValue) tokenCountValue.textContent = globalTokenCount;
             }
-
             renderTabs();
             if (tabsContainer.firstChild) {
                 tabsContainer.firstChild.click(); // Default to first table

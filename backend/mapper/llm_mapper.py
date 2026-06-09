@@ -46,13 +46,15 @@ def save_cache(cache_data):
     with open(CACHE_FILE, "w") as f:
         json.dump(cache_data, f, indent=2)
 
-def get_or_build_column_map(schema: dict) -> dict:
+def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
     """
-    Takes the parsed schema dictionary and returns a mapping of 
-    table_name -> { column_name -> faker_provider_string }
+    Takes the parsed schema dictionary and returns a tuple containing:
+    - mapping of table_name -> { column_name -> faker_provider_string }
+    - token_usage dict with input_tokens and output_tokens
     """
     cache = load_cache()
     full_mapping = {}
+    token_usage = {"input_tokens": 0, "output_tokens": 0}
     
     # In a real environment, you'd want to handle the API key securely.
     # Here we expect ANTHROPIC_API_KEY to be set in the environment.
@@ -113,6 +115,10 @@ def get_or_build_column_map(schema: dict) -> dict:
             cache[cache_key] = mapping
             full_mapping[table_name] = mapping
             schema_changed = True
+            
+            if hasattr(response, 'usage') and response.usage:
+                token_usage["input_tokens"] += getattr(response.usage, 'input_tokens', 0)
+                token_usage["output_tokens"] += getattr(response.usage, 'output_tokens', 0)
             
         except Exception as e:
             logger.error(f"Error mapping table {table_name}: {e}")
