@@ -3,6 +3,8 @@ import json
 import logging
 import anthropic
 
+
+
 logger = logging.getLogger(__name__)
 
 CACHE_FILE = "mapper_cache.json"
@@ -57,10 +59,17 @@ def get_or_build_column_map(schema: dict) -> dict:
     client = anthropic.Anthropic()
     
     schema_changed = False
+    total_tokens = 0
 
+    import hashlib
     for table_name, table_data in schema.items():
-        if table_name in cache:
-            full_mapping[table_name] = cache[table_name]
+        # Create a unique cache key based on table name and structure (columns and foreign keys)
+        table_structure_str = json.dumps(table_data, sort_keys=True)
+        structure_hash = hashlib.sha256(table_structure_str.encode()).hexdigest()
+        cache_key = f"{table_name}:{structure_hash}"
+        
+        if cache_key in cache:
+            full_mapping[table_name] = cache[cache_key]
             continue
             
         logger.info(f"Mapping columns for table '{table_name}' using LLM...")
@@ -87,13 +96,21 @@ def get_or_build_column_map(schema: dict) -> dict:
             # Parse the JSON out of the response
             # Sometimes Claude wraps it in ```json ... ``` blocks
             content = response.content[0].text
+            prompt_tokens = response.usage.input_tokens
+            completion_tokens = response.usage.output_tokens
+            table_tokens = prompt_tokens + completion_tokens
+            total_tokens += table_tokens
+            logger.info(f"Tokens used for '{table_name}': {prompt_tokens} prompt + {completion_tokens} completion = {table_tokens} total")
+            print(f"Tokens used for '{table_name}': {prompt_tokens} prompt + {completion_tokens} completion = {table_tokens} total")
+            
+            
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
                 
             mapping = json.loads(content)
-            cache[table_name] = mapping
+            cache[cache_key] = mapping
             full_mapping[table_name] = mapping
             schema_changed = True
             
@@ -104,4 +121,8 @@ def get_or_build_column_map(schema: dict) -> dict:
     if schema_changed:
         save_cache(cache)
         
-    return full_mapping
+    if total_tokens > 0:
+        logger.info(f"Total tokens used across all LLM calls: {total_tokens}")
+        print(f"Total tokens used across all LLM calls: {total_tokens}")
+
+    return full_mapping, total_tokens

@@ -9,8 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tabsContainer = document.getElementById('tabs');
     const resultsContent = document.getElementById('results-content');
+    const tokenCountValue = document.getElementById('token-count-value');
 
     let currentData = null;
+    let globalTokenCount = parseInt(localStorage.getItem('tokenCount') || '0');
+    if (tokenCountValue) {
+        tokenCountValue.textContent = globalTokenCount;
+    }
 
     // Load sample DDL into textarea initially
     ddlInput.value = `CREATE TABLE users (
@@ -45,7 +50,9 @@ CREATE TABLE posts (
         resultsContent.innerHTML = '<div class="empty-state"><p>Generating data (calling LLM)...</p></div>';
 
         try {
-            const response = await fetch('/api/generate', {
+            const isLocalOrDifferentPort = window.location.protocol === 'file:' || window.location.port !== '8000';
+            const baseUrl = isLocalOrDifferentPort ? 'http://localhost:8000' : '';
+            const response = await fetch(`${baseUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ddl, rows })
@@ -58,6 +65,14 @@ CREATE TABLE posts (
             }
 
             currentData = data;
+            
+            // Accumulate tokens
+            if (data.tokens_used) {
+                globalTokenCount += data.tokens_used;
+                localStorage.setItem('tokenCount', globalTokenCount);
+                if (tokenCountValue) tokenCountValue.textContent = globalTokenCount;
+            }
+
             renderTabs();
             if (tabsContainer.firstChild) {
                 tabsContainer.firstChild.click(); // Default to first table

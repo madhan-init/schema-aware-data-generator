@@ -1,4 +1,11 @@
 import os
+import sys
+
+# Add the root project directory to the Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import logging
+
 import click
 from dotenv import load_dotenv
 from backend.parser.ddl_parser import parse_ddl
@@ -23,7 +30,7 @@ def run(ddl, rows, output):
     schema = parse_ddl(ddl_content)
     
     click.echo(f"[*] Extracting schema and mapping columns...")
-    column_map = get_or_build_column_map(schema)
+    column_map, tokens_used = get_or_build_column_map(schema)
     
     click.echo(f"[*] Resolving topological dependencies...")
     topo_order = build_order(schema)

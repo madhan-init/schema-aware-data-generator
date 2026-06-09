@@ -15,7 +15,17 @@ from backend.exporter.exporter import to_sql_inserts
 
 load_dotenv()
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class GenerateRequest(BaseModel):
     ddl: str = Field(..., min_length=1, max_length=50_000)
@@ -25,13 +35,14 @@ class GenerateRequest(BaseModel):
 def api_generate(req: GenerateRequest):
     try:
         schema = parse_ddl(req.ddl)
-        column_map = get_or_build_column_map(schema)
+        column_map, tokens_used = get_or_build_column_map(schema)
         topo_order = build_order(schema)
         generated = generate_data(schema, column_map, topo_order, num_rows=req.rows)
         
         results = {
             "tables": [],
-            "seed_all": ""
+            "seed_all": "",
+            "tokens_used": tokens_used
         }
         
         combined_sql = []
