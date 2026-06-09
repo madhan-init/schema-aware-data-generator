@@ -3,7 +3,7 @@ import io
 import csv
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 import sqlglot
 import anthropic
@@ -18,8 +18,8 @@ load_dotenv()
 app = FastAPI()
 
 class GenerateRequest(BaseModel):
-    ddl: str
-    rows: int
+    ddl: str = Field(..., min_length=1, max_length=50_000)
+    rows: int = Field(default=20, ge=1, le=10_000)
 
 @app.post("/api/generate")
 def api_generate(req: GenerateRequest):

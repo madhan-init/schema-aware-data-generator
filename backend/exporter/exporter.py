@@ -1,5 +1,8 @@
 import os
 import csv
+import logging
+
+logger = logging.getLogger(__name__)
 
 def format_sql_value(v):
     if v is None:
@@ -62,4 +65,4 @@ def export_data(generated_data: dict, topo_order: list, output_dir: str):
     with open(combined_sql_path, "w") as f:
         f.write("\n".join(combined_sql_lines))
         
-    print(f"Export completed successfully. Files written to '{output_dir}'.")
+    logger.info(f"Export completed successfully. Files written to '{output_dir}'.")

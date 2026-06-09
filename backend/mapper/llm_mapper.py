@@ -1,6 +1,9 @@
 import os
 import json
 import anthropic
+import logging
+
+logger = logging.getLogger(__name__)
 
 CACHE_FILE = "mapper_cache.json"
 
@@ -60,7 +63,7 @@ def get_or_build_column_map(schema: dict) -> dict:
             full_mapping[table_name] = cache[table_name]
             continue
             
-        print(f"Mapping columns for table '{table_name}' using LLM...")
+        logger.info(f"Mapping columns for table '{table_name}' using LLM...")
         
         col_list_str = json.dumps(table_data["columns"], indent=2)
         fk_list_str = json.dumps(table_data["foreign_keys"], indent=2)
@@ -95,7 +98,7 @@ def get_or_build_column_map(schema: dict) -> dict:
             schema_changed = True
             
         except Exception as e:
-            print(f"Error mapping table {table_name}: {e}")
+            logger.error(f"Error mapping table {table_name}: {e}")
             raise  # Do not fallback, halt execution
             
     if schema_changed:
