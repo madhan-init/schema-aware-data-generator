@@ -6,23 +6,20 @@ An intelligent, schema-aware test data generation tool that utilizes Large Langu
 
 - **Schema Introspection & Parsing:** Automatically parses standard SQL DDL (Data Definition Language) to understand table structures, data types, and constraints.
 - **Topological Sorting:** Resolves foreign key dependencies to ensure tables are populated in the correct relational order (e.g., creating `users` before `posts`).
-- **LLM-Powered Data Mapping:** Uses Gemini to intelligently map database columns to appropriate semantic data generators (via Faker), ensuring contextually accurate test data (e.g., mapping `email_addr` to real-looking email addresses).
-- **Dual Interfaces:**
-  - **Web UI:** A sleek, Neobrutalist-styled web application built with Vanilla JS, CSS, and HTML. Features live data previews, SQL/CSV toggles, and direct CSV downloads.
-  - **CLI:** A fast, terminal-based interface for automated scripting and CI/CD pipelines.
+- **LLM-Powered Data Mapping:** Uses Anthropic (Claude) to intelligently map database columns to appropriate semantic data generators (via Faker), ensuring contextually accurate test data (e.g., mapping `email_addr` to real-looking email addresses).
 - **Multiple Export Formats:** Generates both combined `seed_all.sql` files and individual table `.csv` data dumps.
 
 ## Architecture
 
 - **Backend:** Python 3, FastAPI, Click (for CLI)
 - **Frontend:** Vanilla HTML5, CSS3, JavaScript
-- **AI Integration:** Google Gemini API
+- **AI Integration:** Anthropic API (Claude)
 - **Data Generation:** Python Faker
 
 ## Prerequisites
 
 - Python 3.9 or higher
-- A Google Gemini API Key
+- A valid Anthropic API Key
 
 ## Installation
 
@@ -44,9 +41,9 @@ An intelligent, schema-aware test data generation tool that utilizes Large Langu
    ```
 
 4. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and add your Gemini API key:
+   Create a `.env` file in the root directory and add your Anthropic API key:
    ```env
-   GEMINI_API_KEY=your_api_key_here
+   ANTHROPIC_API_KEY=your_api_key_here
    ```
 
 ## Usage
@@ -72,7 +69,7 @@ python -m backend.main --ddl schemas/sample.sql --rows 50 --output ./output
 
 **CLI Arguments:**
 - `--ddl` (Required): Path to your SQL DDL file containing `CREATE TABLE` statements.
-- `--rows` (Optional): Number of rows to generate per table. Default is 10.
+- `--rows` (Optional): Number of rows to generate per table. Default is 20 (Maximum 10,000 for safety).
 - `--output` (Optional): Directory where the generated `.sql` and `.csv` files will be saved. Default is `./output`.
 
 ## Project Structure
@@ -92,6 +89,7 @@ schema-aware-generator/
 │   └── script.js              # UI interaction and API integration
 ├── schemas/                   # Sample DDL input files
 ├── output/                    # Generated test data
+├── mapper_cache.json          # Cached LLM mappings to save API calls
 ├── requirements.txt           # Python dependencies
 └── .env                       # API Configuration
 ```
