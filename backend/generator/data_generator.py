@@ -1,6 +1,6 @@
 import random
 import ast
-from graphlib import TopologicalSorter
+from graphlib import TopologicalSorter, CycleError
 from faker import Faker
 
 def build_order(schema: dict) -> list:
@@ -10,11 +10,34 @@ def build_order(schema: dict) -> list:
     """
     graph = {}
     for table, meta in schema.items():
-        deps = {fk["ref_table"] for fk in meta["foreign_keys"]}
+        # Exclude self-references to avoid trivial CycleErrors
+        deps = {fk["ref_table"] for fk in meta["foreign_keys"] if fk["ref_table"] != table}
         graph[table] = deps
         
-    ts = TopologicalSorter(graph)
-    return list(ts.static_order())
+    while True:
+        try:
+            ts = TopologicalSorter(graph)
+            return list(ts.static_order())
+        except CycleError as e:
+            # e.args[1] is a tuple representing the cycle (e.g., A -> B -> C -> A)
+            cycle = e.args[1]
+            if len(cycle) >= 2:
+                node_with_dep = cycle[0]
+                dep_to_remove = cycle[1]
+                if dep_to_remove in graph.get(node_with_dep, set()):
+                    graph[node_with_dep].remove(dep_to_remove)
+                else:
+                    # Fallback if format differs, remove an arbitrary edge in the cycle
+                    for n in cycle:
+                        if graph.get(n):
+                            graph[n].pop()
+                            break
+            else:
+                # Fallback, just pick a node and clear a dependency
+                for n in graph:
+                    if graph[n]:
+                        graph[n].pop()
+                        break
 
 def safe_eval_faker(faker_instance: Faker, expr: str):
     """
@@ -63,8 +86,11 @@ def generate_data(schema: dict, column_map: dict, topo_order: list, num_rows: in
     faker = Faker()
     generated = {}  # table_name -> list of row dicts
 
+    # Initialize all tables in generated so self-references can append incrementally
     for table in topo_order:
-        rows = []
+        generated[table] = []
+
+    for table in topo_order:
         for _ in range(num_rows):
             row = {}
             for col, faker_expr in column_map.get(table, {}).items():
@@ -84,7 +110,17 @@ def generate_data(schema: dict, column_map: dict, topo_order: list, num_rows: in
                     # Generate value using safe evaluator
                     row[col] = safe_eval_faker(faker, faker_expr)
                     
-            rows.append(row)
-        generated[table] = rows
+            generated[table].append(row)
+
+    # Second pass to patch cyclic FKs that were resolved to None
+    for table in topo_order:
+        for row in generated[table]:
+            for col, faker_expr in column_map.get(table, {}).items():
+                if faker_expr.startswith("FK:") and row[col] is None:
+                    _, ref = faker_expr.split("FK:")
+                    ref_table, ref_col = ref.split(".")
+                    if ref_table in generated and generated[ref_table]:
+                        parent_row = random.choice(generated[ref_table])
+                        row[col] = parent_row[ref_col]
 
     return generated
