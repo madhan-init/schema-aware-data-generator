@@ -30,6 +30,12 @@ def safe_eval_faker(faker_instance: Faker, expr: str):
         if isinstance(node, ast.Name):
             if node.id == 'faker':
                 return faker_instance
+            if node.id in ('true', 'True'):
+                return True
+            if node.id in ('false', 'False'):
+                return False
+            if node.id in ('null', 'None'):
+                return None
             raise ValueError(f"Unknown name: {node.id}")
         elif isinstance(node, ast.Attribute):
             obj = _eval(node.value)
