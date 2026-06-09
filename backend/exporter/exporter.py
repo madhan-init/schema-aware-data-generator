@@ -61,8 +61,7 @@ def export_data(generated_data: dict, topo_order: list, output_dir: str):
                 writer.writerow(csv_row)
                 
     # 3. Write combined SQL file
-    combined_sql_path = os.path.join(output_dir, "seed_all.sql")
-    with open(combined_sql_path, "w") as f:
-        f.write("\n".join(combined_sql_lines))
+    with open(os.path.join(output_dir, "seed_all.sql"), "w") as f:
+        f.write("\n\n".join(combined_sql_lines))
         
     logger.info(f"Export completed successfully. Files written to '{output_dir}'.")

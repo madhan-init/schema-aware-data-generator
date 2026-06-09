@@ -1,7 +1,7 @@
 import os
 import json
-import anthropic
 import logging
+import anthropic
 
 logger = logging.getLogger(__name__)
 
