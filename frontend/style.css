@@ -388,20 +388,17 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    background: var(--accent-yellow);
-    border: var(--border-width) solid var(--border-color);
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--text-primary);
-    box-shadow: 3px 3px 0px 0px #111111;
-    margin-top: auto;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 1.5rem;
     width: 100%;
 }
 
 .token-counter svg {
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
 }

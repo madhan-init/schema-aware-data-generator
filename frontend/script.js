@@ -7,19 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinner = document.querySelector('.spinner');
     const errorMsg = document.getElementById('error-message');
     
-    const tokenUsageContainer = document.getElementById('token-usage');
-    const inputTokensSpan = document.getElementById('input-tokens');
-    const outputTokensSpan = document.getElementById('output-tokens');
-    const totalTokensSpan = document.getElementById('total-tokens');
-
+    const tokenCounterElement = document.getElementById('token-counter');
     const tabsContainer = document.getElementById('tabs');
     const resultsContent = document.getElementById('results-content');
     const tokenCountValue = document.getElementById('token-count-value');
 
     let currentData = null;
-    let globalTokenCount = parseInt(localStorage.getItem('tokenCount') || '0');
+    let globalTokenCount = 0;
+    // Clear any old saved tokens from localStorage just in case
+    localStorage.removeItem('tokenCount');
     if (tokenCountValue) {
         tokenCountValue.textContent = globalTokenCount;
+    }
+    if (tokenCounterElement) {
+        if (globalTokenCount === 0) {
+            tokenCounterElement.classList.add('hidden');
+        } else {
+            tokenCounterElement.classList.remove('hidden');
+        }
     }
 
 
@@ -37,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnText.classList.add('hidden');
         spinner.classList.remove('hidden');
         errorMsg.classList.add('hidden');
-        if (tokenUsageContainer) tokenUsageContainer.classList.add('hidden');
+        // We do not hide the persistent token counter during loading
         resultsContent.innerHTML = '<div class="empty-state"><p>Generating data (calling LLM)...</p></div>';
 
         try {
@@ -60,8 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Accumulate tokens
             if (data.tokens_used) {
                 globalTokenCount += data.tokens_used;
-                localStorage.setItem('tokenCount', globalTokenCount);
                 if (tokenCountValue) tokenCountValue.textContent = globalTokenCount;
+                if (globalTokenCount > 0 && tokenCounterElement) {
+                    tokenCounterElement.classList.remove('hidden');
+                }
             }
             renderTabs();
             if (tabsContainer.firstChild) {
