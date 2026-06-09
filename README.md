@@ -1,6 +1,9 @@
 # Schema-Aware Test Data Generator
-
 An intelligent, schema-aware test data generation tool that utilizes Large Language Models (LLMs) to create realistic, referentially consistent synthetic data based on SQL DDL definitions.
+
+![Architecture Diagram](frontend/assets/architectute.png)
+
+
 ## Key Features
 
 - **Schema Introspection & Parsing:** Automatically parses standard SQL DDL (Data Definition Language) to understand table structures, data types, and constraints.
