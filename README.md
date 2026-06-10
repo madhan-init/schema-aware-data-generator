@@ -1,8 +1,6 @@
 # Schema-Aware Test Data Generator
 An intelligent, schema-aware test data generation tool that utilizes Large Language Models (LLMs) to create realistic, referentially consistent synthetic data based on SQL DDL definitions.
 
-![Architecture Diagram](frontend/assets/architectute.png)
-
 
 ## Key Features
 
@@ -12,6 +10,8 @@ An intelligent, schema-aware test data generation tool that utilizes Large Langu
 - **Multiple Export Formats:** Generates both combined `seed_all.sql` files and individual table `.csv` data dumps.
 
 ## Architecture
+
+![Architecture Diagram](project/frontend/assets/architectute.png)
 
 - **Backend:** Python 3, FastAPI, Click (for CLI)
 - **Frontend:** Vanilla HTML5, CSS3, JavaScript

@@ -8,7 +8,7 @@ ENV/
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+
 
 # Node
 node_modules/
