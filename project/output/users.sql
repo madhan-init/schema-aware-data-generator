@@ -1,0 +1,21 @@
+-- Data for users
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (50729, 'valerie85', 'larry08@example.org', '2026-04-01T14:04:18.733005');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (96610, 'kevin56', 'bryancarlson@example.org', '2026-01-12T22:07:07.191147');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (1841, 'salasalejandro', 'donald23@example.org', '2026-02-09T02:04:55.013203');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (52591, 'timothyrichardson', 'sharonwright@example.org', '2026-02-13T09:53:06.105110');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (22234, 'caldwellcarla', 'vazquezmichael@example.org', '2026-01-30T19:17:59.379671');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (81493, 'zwalker', 'valeriewalker@example.org', '2026-01-02T06:03:10.384267');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (54255, 'hschmidt', 'dduarte@example.com', '2026-03-13T16:00:02.895013');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (14096, 'tcastaneda', 'dburgess@example.net', '2026-01-18T08:01:55.605348');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (5916, 'richard58', 'jeffrey40@example.org', '2026-04-26T14:07:21.317597');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (86813, 'hunter87', 'pturner@example.net', '2026-02-20T15:29:44.608909');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (55661, 'christopherkirk', 'xfoster@example.org', '2026-04-22T17:31:06.872020');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (14862, 'simpsonallen', 'wrivera@example.com', '2026-05-20T14:57:51.928836');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (13687, 'andrew27', 'thomasbradley@example.com', '2026-01-07T03:26:28.403849');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (61438, 'longryan', 'maliktaylor@example.com', '2026-04-19T14:06:34.558787');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (52777, 'wlee', 'cindylopez@example.org', '2026-02-24T17:34:06.140117');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (17615, 'jessica60', 'znewman@example.com', '2026-06-10T05:53:09.423140');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (39773, 'edwardrice', 'rodney30@example.net', '2026-02-09T16:46:29.010703');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (43165, 'lfry', 'powelltheresa@example.org', '2026-04-02T05:38:02.195471');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (36074, 'yyoung', 'michealsmith@example.net', '2026-02-03T09:13:02.985026');
+INSERT INTO users (id, u_nm, email_addr, created_at) VALUES (68015, 'adickson', 'steven67@example.org', '2026-02-11T00:59:09.091699');
