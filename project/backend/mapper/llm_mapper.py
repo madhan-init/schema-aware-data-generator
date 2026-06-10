@@ -74,9 +74,32 @@ def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
             full_mapping[table_name] = cache[cache_key]
             continue
             
-        logger.info(f"Mapping columns for table '{table_name}' using LLM...")
+        # Try to find a previous mapping for this table
+        previous_mapping = {}
+        for k, v in cache.items():
+            if k.startswith(f"{table_name}:"):
+                previous_mapping = v
         
-        col_list_str = json.dumps(table_data["columns"], indent=2)
+        # Identify columns that are not in the previous mapping
+        unmapped_columns = []
+        new_mapping = {}
+        for col_def in table_data["columns"]:
+            col_name = col_def["name"]
+            if col_name in previous_mapping:
+                new_mapping[col_name] = previous_mapping[col_name]
+            else:
+                unmapped_columns.append(col_def)
+                
+        if not unmapped_columns:
+            logger.info(f"Reusing previous mappings for all columns of '{table_name}'. No LLM call needed.")
+            cache[cache_key] = new_mapping
+            full_mapping[table_name] = new_mapping
+            schema_changed = True
+            continue
+            
+        logger.info(f"Mapping new/unmapped columns for table '{table_name}' using LLM...")
+        
+        col_list_str = json.dumps(unmapped_columns, indent=2)
         fk_list_str = json.dumps(table_data["foreign_keys"], indent=2)
         
         prompt = PROMPT_TEMPLATE.format(
@@ -112,8 +135,13 @@ def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
                 content = content.split("```")[1].split("```")[0].strip()
                 
             mapping = json.loads(content)
-            cache[cache_key] = mapping
-            full_mapping[table_name] = mapping
+            
+            # Merge newly mapped columns into new_mapping
+            for k, v in mapping.items():
+                new_mapping[k] = v
+                
+            cache[cache_key] = new_mapping
+            full_mapping[table_name] = new_mapping
             schema_changed = True
             
             if hasattr(response, 'usage') and response.usage:

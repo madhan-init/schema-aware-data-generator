@@ -14,6 +14,7 @@ CREATE TABLE posts (
     user_id     INT NOT NULL,
     title       VARCHAR(255) NOT NULL,
     body        TEXT,
+    views       INT DEFAULT 0,
     published   BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
