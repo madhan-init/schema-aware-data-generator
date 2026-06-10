@@ -78,20 +78,18 @@ python -m backend.main --ddl schemas/sample.sql --rows 50 --output ./output
 
 ```text
 schema-aware-generator/
-├── backend/
-│   ├── app.py                 # FastAPI web server entry point
-│   ├── main.py                # CLI entry point
-│   ├── parser/                # SQL DDL parsing logic
-│   ├── mapper/                # LLM-to-Faker mapping logic
-│   ├── generator/             # Data generation and topological sorting
-│   └── exporter/              # File export handlers (SQL/CSV)
-├── frontend/
-│   ├── index.html             # UI layout
-│   ├── style.css              # Neobrutalist styling
-│   └── script.js              # UI interaction and API integration
-├── schemas/                   # Sample DDL input files
-├── output/                    # Generated test data
-├── mapper_cache.json          # Cached LLM mappings to save API calls
-├── requirements.txt           # Python dependencies
-└── .env                       # API Configuration
+├── project/
+│   ├── backend/
+│   │   ├── parser/                # SQL DDL parsing
+│   │   ├── mapper/                # LLM-to-Faker mapping
+│   │   ├── generator/             # Data generation
+│   │   └── exporter/              # File exports
+│   ├── frontend/
+│   │   └── assets/                # Static assets
+│   ├── schemas/                   # Sample DDL files
+│   └── output/                    # Generated test data
+├── requirements.txt
+├── README.md
+├── .gitignore
+└── .env
 ```
