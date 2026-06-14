@@ -1,6 +1,7 @@
 import os
 import io
 import csv
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -75,7 +76,8 @@ def api_generate(req: GenerateRequest):
         results["seed_all"] = "\n".join(combined_sql)
         return results
     except sqlglot.errors.ParseError as e:
-        raise HTTPException(status_code=400, detail=f"Bad DDL: {str(e)}")
+        error_msg = re.sub(r'\x1b\[[0-9;]*m', '', str(e))
+        raise HTTPException(status_code=400, detail=f"Bad DDL: {error_msg}")
     except anthropic.AuthenticationError as e:
         raise HTTPException(status_code=500, detail=f"Anthropic Authentication Error: {str(e)}")
     except anthropic.APIConnectionError as e:
