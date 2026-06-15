@@ -46,6 +46,23 @@ def save_cache(cache_data):
     with open(CACHE_FILE, "w") as f:
         json.dump(cache_data, f, indent=2)
 
+MAX_CACHE_SIZE = 50
+
+def _update_lru_cache(cache: dict, key: str, value: dict):
+    if key in cache:
+        del cache[key]
+    cache[key] = value
+    while len(cache) > MAX_CACHE_SIZE:
+        oldest_key = next(iter(cache))
+        del cache[oldest_key]
+
+def _access_lru_cache(cache: dict, key: str) -> dict:
+    if key in cache:
+        val = cache.pop(key)
+        cache[key] = val
+        return val
+    return None
+
 def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
     """
     Takes the parsed schema dictionary and returns a tuple containing:
@@ -71,7 +88,8 @@ def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
         cache_key = f"{table_name}:{structure_hash}"
         
         if cache_key in cache:
-            full_mapping[table_name] = cache[cache_key]
+            full_mapping[table_name] = _access_lru_cache(cache, cache_key)
+            schema_changed = True
             continue
             
         # Try to find a previous mapping for this table
@@ -92,7 +110,7 @@ def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
                 
         if not unmapped_columns:
             logger.info(f"Reusing previous mappings for all columns of '{table_name}'. No LLM call needed.")
-            cache[cache_key] = new_mapping
+            _update_lru_cache(cache, cache_key, new_mapping)
             full_mapping[table_name] = new_mapping
             schema_changed = True
             continue
@@ -140,7 +158,7 @@ def get_or_build_column_map(schema: dict) -> tuple[dict, dict]:
             for k, v in mapping.items():
                 new_mapping[k] = v
                 
-            cache[cache_key] = new_mapping
+            _update_lru_cache(cache, cache_key, new_mapping)
             full_mapping[table_name] = new_mapping
             schema_changed = True
             
