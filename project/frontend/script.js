@@ -12,6 +12,78 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsContent = document.getElementById('results-content');
     const tokenCountValue = document.getElementById('token-count-value');
 
+    // New NLP Elements
+    const tabDdl = document.getElementById('tab-ddl');
+    const tabNlp = document.getElementById('tab-nlp');
+    const ddlSection = document.getElementById('ddl-section');
+    const nlpSection = document.getElementById('nlp-section');
+    const nlpInput = document.getElementById('nlp-input');
+    const generateDdlBtn = document.getElementById('generate-ddl-btn');
+    const nlpBtnText = document.getElementById('nlp-btn-text');
+    const nlpSpinner = document.getElementById('nlp-spinner');
+
+    // Tab Switching Logic
+    tabDdl.addEventListener('click', () => {
+        tabDdl.classList.add('active');
+        tabNlp.classList.remove('active');
+        ddlSection.style.display = 'block';
+        nlpSection.style.display = 'none';
+    });
+
+    tabNlp.addEventListener('click', () => {
+        tabNlp.classList.add('active');
+        tabDdl.classList.remove('active');
+        nlpSection.style.display = 'flex';
+        nlpSection.style.flexDirection = 'column';
+        ddlSection.style.display = 'none';
+    });
+
+    // Generate DDL from NLP Logic
+    generateDdlBtn.addEventListener('click', async () => {
+        const prompt = nlpInput.value.trim();
+        if (!prompt) return;
+
+        generateDdlBtn.disabled = true;
+        nlpBtnText.classList.add('hidden');
+        nlpSpinner.classList.remove('hidden');
+        errorMsg.classList.add('hidden');
+
+        try {
+            const isLocalOrDifferentPort = window.location.protocol === 'file:' || window.location.port !== '8000';
+            const baseUrl = isLocalOrDifferentPort ? 'http://localhost:8000' : '';
+            const response = await fetch(`${baseUrl}/api/generate-ddl`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || 'An error occurred during DDL generation.');
+            }
+
+            // Populate DDL and switch tabs
+            ddlInput.value = data.ddl;
+            tabDdl.click();
+
+            if (data.tokens_used) {
+                globalTokenCount += data.tokens_used;
+                if (tokenCountValue) tokenCountValue.textContent = globalTokenCount;
+                if (globalTokenCount > 0 && tokenCounterElement) {
+                    tokenCounterElement.classList.remove('hidden');
+                }
+            }
+        } catch (error) {
+            errorMsg.textContent = error.message;
+            errorMsg.classList.remove('hidden');
+        } finally {
+            generateDdlBtn.disabled = false;
+            nlpBtnText.classList.remove('hidden');
+            nlpSpinner.classList.add('hidden');
+        }
+    });
+
     let currentData = null;
     let globalTokenCount = 0;
     // Clear any old saved tokens from localStorage just in case

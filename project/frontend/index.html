@@ -21,10 +21,22 @@
                 <h1 style="margin-bottom: 0;">Test Data Generator</h1>
             </header>
 
+            <div class="tabs" id="input-tabs" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border);">
+                <button class="tab active" id="tab-ddl">DDL Input</button>
+                <button class="tab" id="tab-nlp">NLP Input</button>
+            </div>
+            
             <form id="generate-form">
-                <div class="form-group">
-
+                <div class="form-group" id="ddl-section">
                     <textarea id="ddl-input" placeholder="CREATE TABLE users ( ... );"></textarea>
+                </div>
+
+                <div class="form-group hidden" id="nlp-section" style="display: none;">
+                    <textarea id="nlp-input" placeholder="Describe your schema... (e.g. A blog with users and posts)"></textarea>
+                    <button type="button" id="generate-ddl-btn" class="secondary-btn" style="margin-top: 10px; width: auto; align-self: flex-start; padding: 0.5rem 1rem;">
+                        <span class="btn-text" id="nlp-btn-text">Generate DDL</span>
+                        <span class="spinner hidden" id="nlp-spinner"></span>
+                    </button>
                 </div>
 
                 <div class="form-row">
