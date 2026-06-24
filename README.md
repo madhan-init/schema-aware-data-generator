@@ -5,6 +5,7 @@ An intelligent, schema-aware test data generation tool that utilizes Large Langu
 ## Key Features
 
 - **Schema Introspection & Parsing:** Automatically parses standard SQL DDL (Data Definition Language) to understand table structures, data types, and constraints.
+- **Natural Language Schema Generation:** Provide a plain English description of your database (e.g., "An e-commerce app with users and orders") and the tool will automatically generate the corresponding SQL DDL for you.
 - **Topological Sorting:** Resolves foreign key dependencies to ensure tables are populated in the correct relational order (e.g., creating `users` before `posts`).
 - **LLM-Powered Data Mapping:** Uses Anthropic (Claude) to intelligently map database columns to appropriate semantic data generators (via Faker), ensuring contextually accurate test data (e.g., mapping `email_addr` to real-looking email addresses).
 - **Multiple Export Formats:** Generates both combined `seed_all.sql` files and individual table `.csv` data dumps.
@@ -15,7 +16,7 @@ An intelligent, schema-aware test data generation tool that utilizes Large Langu
 
 - **Backend:** Python 3, FastAPI, Click (for CLI)
 - **Frontend:** Vanilla HTML5, CSS3, JavaScript
-- **AI Integration:** Anthropic API (Claude)
+- **AI Integration:** Anthropic API (Claude) for Schema Generation and Data Mapping
 - **Data Generation:** Python Faker
 
 ## Prerequisites
@@ -59,7 +60,12 @@ uvicorn backend.app:app --reload
 ```
 
 Then, open your browser and navigate to `http://localhost:8000`. 
-Paste your SQL DDL into the left pane, specify the number of rows, and click "Generate Data".
+
+You can provide your schema in two ways:
+1. **DDL Input:** Paste your existing SQL DDL into the text area.
+2. **NLP Input:** Switch to the NLP tab, describe your schema in plain text, and click **Generate DDL** to have the LLM write the SQL for you.
+
+Specify the number of rows, and click "Generate Data".
 
 ### Running the Command Line Interface (CLI)
 
