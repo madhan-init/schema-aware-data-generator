@@ -12,6 +12,7 @@ import anthropic
 from backend.parser.ddl_parser import parse_ddl
 from backend.mapper.llm_mapper import get_or_build_column_map
 from backend.generator.data_generator import build_order, generate_data
+from backend.generator.nlp_to_ddl import generate_ddl_from_nlp
 from backend.exporter.exporter import to_sql_inserts
 
 load_dotenv()
@@ -31,6 +32,10 @@ app.add_middleware(
 class GenerateRequest(BaseModel):
     ddl: str = Field(..., min_length=1, max_length=50_000)
     rows: int = Field(default=20, ge=1, le=10_000)
+
+class GenerateDDLRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=10_000)
+
 
 @app.post("/api/generate")
 def api_generate(req: GenerateRequest):
@@ -90,6 +95,26 @@ def api_generate(req: GenerateRequest):
         raise HTTPException(status_code=400, detail=f"Bad Request: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+@app.post("/api/generate-ddl")
+def api_generate_ddl(req: GenerateDDLRequest):
+    try:
+        ddl, tokens_used = generate_ddl_from_nlp(req.prompt)
+        return {
+            "ddl": ddl,
+            "tokens_used": tokens_used
+        }
+    except anthropic.AuthenticationError as e:
+        raise HTTPException(status_code=500, detail=f"Anthropic Authentication Error: {str(e)}")
+    except anthropic.APIConnectionError as e:
+        raise HTTPException(status_code=502, detail=f"Anthropic API Connection Error: {str(e)}")
+    except anthropic.APIStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Anthropic API Status Error: {str(e)}")
+    except anthropic.AnthropicError as e:
+        raise HTTPException(status_code=500, detail=f"Anthropic Error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
 
 # Create frontend dir if it doesn't exist
 os.makedirs("frontend", exist_ok=True)
