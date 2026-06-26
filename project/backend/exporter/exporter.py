@@ -20,11 +20,17 @@ def to_sql_inserts(table_name: str, rows: list) -> str:
     if not rows:
         return f"-- {table_name} (0 rows)\n"
         
+    keys = list(rows[0].keys())
+    cols = ", ".join(keys)
     lines = [f"-- Data for {table_name}"]
+    lines.append(f"INSERT INTO {table_name} ({cols}) VALUES")
+    
+    val_lines = []
     for row in rows:
-        cols = ", ".join(row.keys())
-        vals = ", ".join(format_sql_value(v) for v in row.values())
-        lines.append(f"INSERT INTO {table_name} ({cols}) VALUES ({vals});")
+        vals = ", ".join(format_sql_value(row[k]) for k in keys)
+        val_lines.append(f"  ({vals})")
+        
+    lines.append(",\n".join(val_lines) + ";")
     return "\n".join(lines)
 
 def export_data(generated_data: dict, topo_order: list, output_dir: str):
