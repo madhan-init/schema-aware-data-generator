@@ -36,6 +36,23 @@ class GenerateRequest(BaseModel):
 class GenerateDDLRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=10_000)
 
+class ParseRequest(BaseModel):
+    ddl: str = Field(..., min_length=1, max_length=50_000)
+
+
+@app.post("/api/parse")
+def api_parse(req: ParseRequest):
+    try:
+        schema = parse_ddl(req.ddl)
+        return {"schema": schema}
+    except sqlglot.errors.ParseError as e:
+        error_msg = re.sub(r'\x1b\[[0-9;]*m', '', str(e))
+        raise HTTPException(status_code=400, detail=f"Bad DDL: {error_msg}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Bad Request: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
 
 @app.post("/api/generate")
 def api_generate(req: GenerateRequest):
@@ -46,6 +63,7 @@ def api_generate(req: GenerateRequest):
         generated = generate_data(schema, column_map, topo_order, num_rows=req.rows)
         
         results = {
+            "schema": schema,
             "tables": [],
             "seed_all": "",
             "tokens_used": tokens_used
