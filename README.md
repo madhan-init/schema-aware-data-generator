@@ -9,6 +9,7 @@ An intelligent, schema-aware test data generation tool that utilizes Large Langu
 - **Topological Sorting:** Resolves foreign key dependencies to ensure tables are populated in the correct relational order (e.g., creating `users` before `posts`).
 - **LLM-Powered Data Mapping:** Uses Anthropic (Claude) to intelligently map database columns to appropriate semantic data generators (via Faker), ensuring contextually accurate test data (e.g., mapping `email_addr` to real-looking email addresses).
 - **Multiple Export Formats:** Generates both combined `seed_all.sql` files and individual table `.csv` data dumps.
+- **Schema Visualization:** Render interactive Entity-Relationship Diagrams (ERD) using Mermaid.js directly in the web interface.
 
 ## Architecture
 
@@ -65,7 +66,7 @@ You can provide your schema in two ways:
 1. **DDL Input:** Paste your existing SQL DDL into the text area.
 2. **NLP Input:** Switch to the NLP tab, describe your schema in plain text, and click **Generate DDL** to have the LLM write the SQL for you.
 
-Specify the number of rows, and click "Generate Data".
+Click **Visualize Schema** to instantly preview your relationship diagram, specify the desired row count, and click **Generate Data** to produce mock records.
 
 ### Running the Command Line Interface (CLI)
 
