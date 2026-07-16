@@ -37,7 +37,21 @@ def run(ddl, rows, output):
     click.echo(f"    Order: {' -> '.join(topo_order)}")
     
     click.echo(f"[*] Generating {rows} rows per table...")
-    generated = generate_data(schema, column_map, topo_order, num_rows=rows)
+    tables_config = {}
+    for table_name, table_data in schema.items():
+        columns_cfg = {}
+        for col_def in table_data["columns"]:
+            col_name = col_def["name"]
+            columns_cfg[col_name] = {
+                "faker_expr": column_map.get(table_name, {}).get(col_name, ""),
+                "null_percentage": 0,
+                "custom_list": []
+            }
+        tables_config[table_name] = {
+            "rows": rows,
+            "columns": columns_cfg
+        }
+    generated = generate_data(schema, tables_config, topo_order)
     
     click.echo(f"[*] Exporting to SQL and CSV...")
     export_data(generated, topo_order, output)
