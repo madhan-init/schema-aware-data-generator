@@ -2,10 +2,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('generate-form');
     const ddlInput = document.getElementById('ddl-input');
     const rowsInput = document.getElementById('rows-input');
-    const generateBtn = document.getElementById('generate-btn');
-    // Search within generateBtn to avoid selecting visualizeBtn's elements
-    const btnText = generateBtn.querySelector('.btn-text');
-    const spinner = generateBtn.querySelector('.spinner');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    // Search within analyzeBtn to avoid selecting visualizeBtn's elements
+    const btnText = analyzeBtn.querySelector('.btn-text');
+    const spinner = analyzeBtn.querySelector('.spinner');
     const errorMsg = document.getElementById('error-message');
     
     const tokenCounterElement = document.getElementById('token-counter');
@@ -121,39 +121,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
+    analyzeBtn.addEventListener('click', async () => {
         const ddl = ddlInput.value.trim();
-        const rows = parseInt(rowsInput.value);
-
         if (!ddl) return;
 
         // UI Loading state
-        generateBtn.disabled = true;
+        analyzeBtn.disabled = true;
         btnText.classList.add('hidden');
         spinner.classList.remove('hidden');
         errorMsg.classList.add('hidden');
-        // We do not hide the persistent token counter during loading
-        resultsContent.innerHTML = '<div class="empty-state"><p>Generating data (calling LLM)...</p></div>';
+        resultsContent.innerHTML = '<div class="empty-state"><p>Analyzing DDL and mapping columns (calling LLM)...</p></div>';
 
         try {
             const isLocalOrDifferentPort = window.location.protocol === 'file:' || window.location.port !== '8000';
             const baseUrl = isLocalOrDifferentPort ? 'http://localhost:8000' : '';
-            const response = await fetch(`${baseUrl}/api/generate`, {
+            const response = await fetch(`${baseUrl}/api/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ddl, rows })
+                body: JSON.stringify({ ddl })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.detail || 'An error occurred during generation.');
+                throw new Error(data.detail || 'An error occurred during analysis.');
             }
 
-            currentData = data;
-            
             // Accumulate tokens
             if (data.tokens_used) {
                 globalTokenCount += data.tokens_used;
@@ -162,21 +155,276 @@ document.addEventListener('DOMContentLoaded', () => {
                     tokenCounterElement.classList.remove('hidden');
                 }
             }
-            renderTabs();
-            if (tabsContainer.firstChild) {
-                tabsContainer.firstChild.click(); // Default to first table
-            }
+
+            // Render Customization Dashboard
+            renderCustomizationDashboard(data.schema, data.column_map);
 
         } catch (error) {
             errorMsg.textContent = error.message;
             errorMsg.classList.remove('hidden');
-            resultsContent.innerHTML = '<div class="empty-state"><p>Error generating data.</p></div>';
+            resultsContent.innerHTML = '<div class="empty-state"><p>Error analyzing schema.</p></div>';
         } finally {
-            generateBtn.disabled = false;
+            analyzeBtn.disabled = false;
             btnText.classList.remove('hidden');
             spinner.classList.add('hidden');
         }
     });
+
+    function renderCustomizationDashboard(schema, columnMap) {
+        tabsContainer.innerHTML = ''; // Hide table tabs
+        
+        let html = `
+            <div class="config-container">
+                <div class="config-header">
+                    <h2>Configure Data Generation</h2>
+                    <button id="cancel-config-btn" class="tab" style="box-shadow: 2px 2px 0px #111; font-size: 0.8rem; height: auto; padding: 0.5rem 1rem;">Back to DDL</button>
+                </div>
+                <div class="config-body">
+        `;
+
+        const defaultRows = parseInt(rowsInput.value) || 10;
+
+        for (const [tableName, tableData] of Object.entries(schema)) {
+            html += `
+                <div class="table-card" data-table="${tableName}">
+                    <div class="table-card-header">
+                        <div class="table-card-title">${escapeHtml(tableName)}</div>
+                        <div class="table-card-rows">
+                            <label>Rows:</label>
+                            <input type="number" class="table-rows-input" value="${defaultRows}" min="0" max="1000">
+                        </div>
+                    </div>
+                    
+                    <div class="col-headers">
+                        <div>Column</div>
+                        <div>Badge</div>
+                        <div>Gen Type</div>
+                        <div>Expression / Values</div>
+                        <div>Null %</div>
+                    </div>
+                    <div class="columns-config-list">
+            `;
+
+            tableData.columns.forEach(col => {
+                const colName = col.name;
+                const colType = col.type;
+                const isPk = col.primary_key;
+                const isNullable = col.nullable;
+                const isUnique = col.unique;
+
+                // Check foreign key status
+                const isFk = tableData.foreign_keys && tableData.foreign_keys.some(fk => fk.column === colName);
+                const fkDef = isFk ? tableData.foreign_keys.find(fk => fk.column === colName) : null;
+                
+                // Determine badge type
+                let badgeClass = 'none';
+                let badgeText = 'col';
+                if (isPk) {
+                    badgeClass = 'pk';
+                    badgeText = 'pk';
+                } else if (isFk) {
+                    badgeClass = 'fk';
+                    badgeText = 'fk';
+                }
+
+                // Initial Faker expression
+                let initialFakerExpr = '';
+                if (isFk) {
+                    initialFakerExpr = `FK:${fkDef.ref_table}.${fkDef.ref_column}`;
+                } else {
+                    initialFakerExpr = columnMap[tableName]?.[colName] || '';
+                }
+
+                // Options for Generator Type
+                let generatorOptions = '';
+                if (isFk) {
+                    generatorOptions = `<option value="fk" selected>Foreign Key</option>`;
+                } else {
+                    generatorOptions = `
+                        <option value="faker" selected>Faker Expression</option>
+                        <option value="list">Custom List</option>
+                    `;
+                }
+
+                // Null probability inputs
+                const nullDisabled = (isPk || isFk || !isNullable) ? 'disabled' : '';
+                const initialNullPct = (isPk || isFk || !isNullable) ? 0 : 10; // default 10% null for nullable fields
+
+                html += `
+                    <div class="col-config-row" data-column="${colName}">
+                        <div class="col-name-container">
+                            <span class="col-name-text">${escapeHtml(colName)}</span>
+                            <span class="col-type-text">${escapeHtml(colType)}</span>
+                        </div>
+                        <div>
+                            <span class="key-badge ${badgeClass}">${badgeText}</span>
+                        </div>
+                        <div>
+                            <select class="col-generator-select" ${isFk ? 'disabled' : ''}>
+                                ${generatorOptions}
+                            </select>
+                        </div>
+                        <div class="col-detail-container">
+                            <input type="text" class="col-detail-input" value="${escapeHtml(initialFakerExpr)}" placeholder="${isFk ? '' : 'faker.name()'}">
+                        </div>
+                        <div class="col-nullability-container">
+                            <input type="range" class="col-null-slider" min="0" max="100" value="${initialNullPct}" ${nullDisabled}>
+                            <span class="col-null-label">${initialNullPct}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
+                <div class="config-footer">
+                    <button type="button" id="submit-gen-btn">
+                        <span class="btn-text">Generate Mock Data</span>
+                        <span class="spinner hidden"></span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        resultsContent.innerHTML = html;
+
+        // Add event listeners to the Customization Dashboard
+        document.getElementById('cancel-config-btn').addEventListener('click', () => {
+            resultsContent.innerHTML = '<div class="empty-state"><p>Configuration cancelled. Paste your schema and click Analyze & Map.</p></div>';
+            tabsContainer.innerHTML = '';
+        });
+
+        // Sliders change event listeners
+        resultsContent.querySelectorAll('.col-null-slider').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const label = e.target.nextElementSibling;
+                label.textContent = `${e.target.value}%`;
+            });
+        });
+
+        // Generator select type change event listener
+        resultsContent.querySelectorAll('.col-generator-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const row = e.target.closest('.col-config-row');
+                const input = row.querySelector('.col-detail-input');
+                if (e.target.value === 'list') {
+                    input.placeholder = 'e.g. active, inactive, pending';
+                    if (!input.value.includes(',')) {
+                        input.value = '';
+                    }
+                } else {
+                    input.placeholder = 'faker.name()';
+                    const colName = row.dataset.column;
+                    const tableName = row.closest('.table-card').dataset.table;
+                    input.value = columnMap[tableName]?.[colName] || '';
+                }
+            });
+        });
+
+        // Submit generation logic
+        document.getElementById('submit-gen-btn').addEventListener('click', async () => {
+            const submitBtn = document.getElementById('submit-gen-btn');
+            const submitText = submitBtn.querySelector('.btn-text');
+            const submitSpinner = submitBtn.querySelector('.spinner');
+
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            submitSpinner.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+
+            try {
+                // Construct the tables_config object
+                const tablesConfig = {};
+                
+                resultsContent.querySelectorAll('.table-card').forEach(card => {
+                    const tableName = card.dataset.table;
+                    const rowsInputVal = card.querySelector('.table-rows-input');
+                    const rowsCount = parseInt(rowsInputVal.value) || 0;
+                    
+                    const columnsCfg = {};
+                    
+                    card.querySelectorAll('.col-config-row').forEach(row => {
+                        const colName = row.dataset.column;
+                        const genSelect = row.querySelector('.col-generator-select');
+                        const detailInput = row.querySelector('.col-detail-input');
+                        const nullSlider = row.querySelector('.col-null-slider');
+                        
+                        const genType = genSelect ? genSelect.value : 'fk';
+                        const details = detailInput.value.trim();
+                        const nullPct = parseInt(nullSlider.value) || 0;
+                        
+                        const colCfg = {
+                            faker_expr: "",
+                            null_percentage: nullPct,
+                            custom_list: []
+                        };
+                        
+                        if (genType === 'fk') {
+                            colCfg.faker_expr = details;
+                        } else if (genType === 'list') {
+                            colCfg.custom_list = details.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                        } else {
+                            colCfg.faker_expr = details;
+                        }
+                        
+                        columnsCfg[colName] = colCfg;
+                    });
+                    
+                    tablesConfig[tableName] = {
+                        rows: rowsCount,
+                        columns: columnsCfg
+                    };
+                });
+
+                const ddl = ddlInput.value.trim();
+
+                const isLocalOrDifferentPort = window.location.protocol === 'file:' || window.location.port !== '8000';
+                const baseUrl = isLocalOrDifferentPort ? 'http://localhost:8000' : '';
+                const response = await fetch(`${baseUrl}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ddl, tables_config: tablesConfig })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'An error occurred during generation.');
+                }
+
+                currentData = data;
+                
+                renderTabs();
+                // Add a "Configure Schema" tab
+                const modifyTab = document.createElement('button');
+                modifyTab.className = 'tab';
+                modifyTab.style.borderColor = 'var(--accent-green)';
+                modifyTab.textContent = '⚙️ Configure';
+                modifyTab.onclick = () => {
+                    renderCustomizationDashboard(schema, columnMap);
+                };
+                tabsContainer.insertBefore(modifyTab, tabsContainer.firstChild);
+
+                if (tabsContainer.children[1]) {
+                    tabsContainer.children[1].click();
+                }
+
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                submitSpinner.classList.add('hidden');
+            }
+        });
+    }
 
     function convertSchemaToMermaid(schema) {
         let mermaidText = "erDiagram\n";
