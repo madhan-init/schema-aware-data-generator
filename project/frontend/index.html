@@ -40,16 +40,16 @@
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group row-count">
-                        <label for="rows-input">Rows per table</label>
-                        <input type="number" id="rows-input" value="10" min="1" max="1000">
+                    <div class="form-group row-count" style="flex: 0 0 100px;">
+                        <label for="rows-input">Default Rows</label>
+                        <input type="number" id="rows-input" value="10" min="1" max="1000" style="width: 100%;">
                     </div>
-                    <button type="button" id="visualize-btn" class="secondary-btn">
-                        <span class="btn-text">Visualize Schema</span>
+                    <button type="button" id="visualize-btn" class="secondary-btn" style="flex: 1; height: 48px;">
+                        <span class="btn-text">Visualize</span>
                         <span class="spinner hidden"></span>
                     </button>
-                    <button type="submit" id="generate-btn">
-                        <span class="btn-text">Generate Data</span>
+                    <button type="button" id="analyze-btn" style="flex: 1; height: 48px;">
+                        <span class="btn-text">Analyze & Map</span>
                         <span class="spinner hidden"></span>
                     </button>
                 </div>
