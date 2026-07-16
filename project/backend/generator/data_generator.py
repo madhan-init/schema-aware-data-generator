@@ -78,10 +78,10 @@ def safe_eval_faker(faker_instance: Faker, expr: str):
     except Exception as e:
         raise ValueError(f"Failed to evaluate faker expression '{expr}': {e}")
 
-def generate_data(schema: dict, column_map: dict, topo_order: list, num_rows: int = 20) -> dict:
+def generate_data(schema: dict, tables_config: dict, topo_order: list) -> dict:
     """
     Generates mock data for all tables in the correct order,
-    resolving foreign keys to actual generated values.
+    taking custom configuration for rows, null values, and custom value lists.
     """
     faker = Faker()
     generated = {}  # table_name -> list of row dicts
@@ -91,36 +91,114 @@ def generate_data(schema: dict, column_map: dict, topo_order: list, num_rows: in
         generated[table] = []
 
     for table in topo_order:
+        table_cfg = tables_config.get(table, {})
+        
+        # Accept either a dict or a TableConfig object/model (FastAPI parses to dict or Pydantic model)
+        if hasattr(table_cfg, "dict"):
+            table_cfg = table_cfg.dict()
+        elif not isinstance(table_cfg, dict):
+            table_cfg = {}
+            
+        num_rows = table_cfg.get("rows", 20)
+        columns_cfg = table_cfg.get("columns", {})
+
         for _ in range(num_rows):
             row = {}
-            for col, faker_expr in column_map.get(table, {}).items():
-                if faker_expr.startswith("FK:"):
-                    # Resolve FK
+            for col_def in schema[table]["columns"]:
+                col_name = col_def["name"]
+                is_unique = col_def.get("unique", False)
+                is_pk = col_def.get("primary_key", False)
+                
+                col_cfg = columns_cfg.get(col_name, {})
+                if hasattr(col_cfg, "dict"):
+                    col_cfg = col_cfg.dict()
+                elif not isinstance(col_cfg, dict):
+                    col_cfg = {}
+                
+                faker_expr = col_cfg.get("faker_expr", "")
+                null_percentage = col_cfg.get("null_percentage", 0)
+                custom_list = col_cfg.get("custom_list", [])
+
+                # 1. Null probability check (skip for PKs and FKs)
+                is_fk = faker_expr.startswith("FK:")
+                if not is_pk and not is_fk and null_percentage > 0 and random.randint(1, 100) <= null_percentage:
+                    row[col_name] = None
+                    continue
+
+                # 2. Check for custom lists
+                if custom_list and len(custom_list) > 0:
+                    if is_unique:
+                        # Attempt to generate unique value
+                        existing_values = {r[col_name] for r in generated[table] if col_name in r}
+                        val = None
+                        for _ in range(100):
+                            temp_val = random.choice(custom_list)
+                            if temp_val not in existing_values:
+                                val = temp_val
+                                break
+                        if val is None:
+                            val = random.choice(custom_list) # fallback
+                        row[col_name] = val
+                    else:
+                        row[col_name] = random.choice(custom_list)
+                    continue
+
+                # 3. Check for foreign keys
+                if is_fk:
                     _, ref = faker_expr.split("FK:")
                     ref_table, ref_col = ref.split(".")
                     
                     if ref_table not in generated or not generated[ref_table]:
-                        # Fallback if parent table data isn't available (e.g. cycles or bad schema)
-                        row[col] = None
+                        row[col_name] = None
                     else:
-                        # Pick a random already-generated row from the referenced table
                         parent_row = random.choice(generated[ref_table])
-                        row[col] = parent_row[ref_col]
+                        row[col_name] = parent_row[ref_col]
+                    continue
+
+                # 4. Standard Faker generation with UNIQUE constraint retry check
+                if faker_expr:
+                    if is_unique:
+                        existing_values = {r[col_name] for r in generated[table] if col_name in r}
+                        val = None
+                        for _ in range(100):
+                            temp_val = safe_eval_faker(faker, faker_expr)
+                            if temp_val not in existing_values:
+                                val = temp_val
+                                break
+                        if val is None:
+                            val = safe_eval_faker(faker, faker_expr)
+                        row[col_name] = val
+                    else:
+                        row[col_name] = safe_eval_faker(faker, faker_expr)
                 else:
-                    # Generate value using safe evaluator
-                    row[col] = safe_eval_faker(faker, faker_expr)
-                    
+                    row[col_name] = None
+
             generated[table].append(row)
 
     # Second pass to patch cyclic FKs that were resolved to None
     for table in topo_order:
+        table_cfg = tables_config.get(table, {})
+        if hasattr(table_cfg, "dict"):
+            table_cfg = table_cfg.dict()
+        elif not isinstance(table_cfg, dict):
+            table_cfg = {}
+        columns_cfg = table_cfg.get("columns", {})
+
         for row in generated[table]:
-            for col, faker_expr in column_map.get(table, {}).items():
-                if faker_expr.startswith("FK:") and row[col] is None:
+            for col_def in schema[table]["columns"]:
+                col_name = col_def["name"]
+                col_cfg = columns_cfg.get(col_name, {})
+                if hasattr(col_cfg, "dict"):
+                    col_cfg = col_cfg.dict()
+                elif not isinstance(col_cfg, dict):
+                    col_cfg = {}
+
+                faker_expr = col_cfg.get("faker_expr", "")
+                if faker_expr.startswith("FK:") and row.get(col_name) is None:
                     _, ref = faker_expr.split("FK:")
                     ref_table, ref_col = ref.split(".")
                     if ref_table in generated and generated[ref_table]:
                         parent_row = random.choice(generated[ref_table])
-                        row[col] = parent_row[ref_col]
+                        row[col_name] = parent_row[ref_col]
 
     return generated

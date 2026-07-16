@@ -18,16 +18,26 @@ def parse_ddl(ddl_string: str) -> dict:
                     col_name = element.name
                     col_type = element.args.get("kind").sql()
                     
-                    # Check for inline primary key
+                    # Check for inline primary key, nullability, uniqueness
                     is_pk = False
+                    is_nullable = True
+                    is_unique = False
                     for constraint in element.args.get("constraints", []):
-                        if isinstance(constraint.args.get("kind"), exp.PrimaryKeyColumnConstraint):
+                        kind = constraint.args.get("kind")
+                        if isinstance(kind, exp.PrimaryKeyColumnConstraint):
                             is_pk = True
+                            is_nullable = False
+                        elif isinstance(kind, exp.NotNullColumnConstraint):
+                            is_nullable = False
+                        elif isinstance(kind, exp.UniqueColumnConstraint):
+                            is_unique = True
                             
                     schema[table_name]["columns"].append({
                         "name": col_name,
                         "type": col_type,
-                        "primary_key": is_pk
+                        "primary_key": is_pk,
+                        "nullable": is_nullable,
+                        "unique": is_unique
                     })
                 else:
                     fk_element = None
